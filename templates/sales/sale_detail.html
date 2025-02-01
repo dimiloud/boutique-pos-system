@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Vente #{{ sale.id }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Détails de la vente #{{ sale.id }}</h1>
+    <a href="{% url 'sales:sale_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Retour à la liste
+    </a>
+</div>
+
+<div class="row">
+    <!-- Informations générales -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Informations générales</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">Date</dt>
+                    <dd class="col-sm-7">{{ sale.date|date:'d/m/Y H:i' }}</dd>
+
+                    <dt class="col-sm-5">Client</dt>
+                    <dd class="col-sm-7">
+                        {% if sale.customer %}
+                            {{ sale.customer.full_name }}
+                        {% else %}
+                            <span class="text-muted">Client occasionnel</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5">Paiement</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge {% if sale.payment_method == 'CARD' %}bg-primary
+                                     {% elif sale.payment_method == 'CASH' %}bg-success
+                                     {% else %}bg-info{% endif %}">
+                            {{ sale.get_payment_method_display }}
+                        </span>
+                    </dd>
+
+                    <dt class="col-sm-5">Sous-total</dt>
+                    <dd class="col-sm-7">{{ sale.subtotal }} €</dd>
+
+                    <dt class="col-sm-5">TVA</dt>
+                    <dd class="col-sm-7">{{ sale.tax }} €</dd>
+
+                    <dt class="col-sm-5">Total</dt>
+                    <dd class="col-sm-7"><strong>{{ sale.total }} €</strong></dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Articles -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Articles</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Produit</th>
+                                <th class="text-center">Quantité</th>
+                                <th class="text-end">Prix unit.</th>
+                                <th class="text-end">Remise</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in sale.items.all %}
+                                <tr>
+                                    <td>{{ item.product.name }}</td>
+                                    <td class="text-center">{{ item.quantity }}</td>
+                                    <td class="text-end">{{ item.unit_price }} €</td>
+                                    <td class="text-end">{{ item.discount }} €</td>
+                                    <td class="text-end">{{ item.total }} €</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4" class="text-end"><strong>Total</strong></td>
+                                <td class="text-end"><strong>{{ sale.total }} €</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if sale.notes %}
+    <!-- Notes -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Notes</h5>
+            </div>
+            <div class="card-body">
+                {{ sale.notes|linebreaks }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
