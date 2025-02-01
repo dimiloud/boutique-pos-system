@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Point de vente - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container .select2-selection--single {
+        height: 38px;
+        line-height: 38px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Partie gauche : Scan et panier -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Panier</h5>
+            </div>
+            <div class="card-body">
+                <!-- Formulaire de scan/recherche -->
+                <form method="post" class="mb-4" id="addItemForm">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            {{ form.barcode|as_crispy_field }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ form.product|as_crispy_field }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ form.quantity|as_crispy_field }}
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Liste des articles -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Produit</th>
+                                <th class="text-center">Quantité</th>
+                                <th class="text-end">Prix unit.</th>
+                                <th class="text-end">Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart %}
+                                <tr>
+                                    <td>{{ item.name }}</td>
+                                    <td class="text-center">{{ item.quantity }}</td>
+                                    <td class="text-end">{{ item.price }} €</td>
+                                    <td class="text-end">{{ item.total }} €</td>
+                                    <td class="text-end">
+                                        <form method="post" action="{% url 'sales:remove_item' item.id %}" 
+                                              style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">Le panier est vide</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        {% if cart %}
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Total :</strong></td>
+                                    <td class="text-end"><strong>{{ total }} €</strong></td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Partie droite : Paiement -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">Finalisation</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'sales:process_payment' %}" id="paymentForm">
+                    {% csrf_token %}
+                    
+                    <!-- Sélection du client -->
+                    <div class="mb-3">
+                        <label class="form-label">Client (optionnel)</label>
+                        <select name="customer" class="form-select select2">
+                            <option value="">Aucun client sélectionné</option>
+                            {% for customer in customers %}
+                                <option value="{{ customer.id }}">{{ customer.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Mode de paiement -->
+                    <div class="mb-4">
+                        <label class="form-label">Mode de paiement</label>
+                        <select name="payment_method" class="form-select" required>
+                            <option value="CARD">Carte bancaire</option>
+                            <option value="CASH">Espèces</option>
+                            <option value="TRANSFER">Virement</option>
+                        </select>
+                    </div>
+
+                    <!-- Boutons d'action -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg" 
+                                {% if not cart %}disabled{% endif %}>
+                            <i class="fas fa-check-circle"></i> Valider la vente
+                        </button>
+                        
+                        <button type="button" class="btn btn-danger" 
+                                {% if not cart %}disabled{% endif %}
+                                onclick="location.href='{% url 'sales:clear_cart' %}'">
+                            <i class="fas fa-trash"></i> Vider le panier
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.select2').select2();
+        
+        // Focus sur le champ code-barres
+        $('#id_barcode').focus();
+        
+        // Réinitialiser le focus après soumission
+        $('#addItemForm').on('submit', function() {
+            setTimeout(function() {
+                $('#id_barcode').focus();
+            }, 100);
+        });
+    });
+</script>
+{% endblock %}
